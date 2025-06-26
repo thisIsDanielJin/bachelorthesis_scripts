@@ -54,6 +54,9 @@ sudo ip -6 route add "$JOOL_NS_IPV6" via "$JOOL_LINK_LOCAL_NS" dev "$VETH_JOOL_H
 # 1.7 set veth cable as default ipv6 route inside the namespace
 sudo ip netns exec "$NS_JOOL" ip -6 route add default via "$JOOL_LINK_LOCAL_HOST" dev "$VETH_HOST_JOOL"
 
+
+# ENABLE IP FORWARDING
+
 # 1.8 Enable IP forwarding on the host
 sudo sysctl -w net.ipv6.conf.all.forwarding=1
 
@@ -75,6 +78,9 @@ VETH_JOOL_APP="j-app-jool-a" # app to jool - app side
 IPV4_APP="192.0.0.2"
 IPV4_JOOL="192.0.0.1"
 
+LINK_LOCAL_JOOL_APP_NS="fe80::3"
+LINK_LOCAL_JOOL_NS="fe80::4"
+
 # 2.0 clean up
 sudo ip netns del "$NS_APP" 2>/dev/null || true
 sudo ip link del "$VETH_JOOL_APP" 2>/dev/null || true
@@ -92,6 +98,10 @@ sudo ip netns exec "$NS_APP" ip link set lo up
 sudo ip netns exec "$NS_JOOL" ip link set "$VETH_APP_JOOL" up
 sudo ip netns exec "$NS_APP" ip link set "$VETH_JOOL_APP" up
 
+# 2.3.2 assign link-local address to veth cable namespace
+sudo ip netns exec "$NS_APP" ip addr add "$LINK_LOCAL_JOOL_APP_NS"/64 dev "$VETH_JOOL_APP"
+sudo ip netns exec "$NS_JOOL" ip addr add "$LINK_LOCAL_JOOL_NS"/64 dev "$VETH_APP_JOOL"
+
 # 2.4 assign IPv4 to veth cable namespace
 sudo ip netns exec "$NS_APP" ip addr add "$IPV4_APP" peer "$IPV4_JOOL" dev "$VETH_JOOL_APP"
 sudo ip netns exec "$NS_JOOL" ip addr add "$IPV4_JOOL" peer "$IPV4_APP" dev "$VETH_APP_JOOL"
@@ -102,8 +112,14 @@ sudo ip netns exec "$NS_JOOL" ip addr add "$JOOL_SIDE_APP_IPV6"/124 dev "$VETH_A
 
 # 2.6 set default route for app namespace
 sudo ip netns exec "$NS_APP" ip route add default via "$IPV4_JOOL" dev "$VETH_JOOL_APP"
-sudo ip netns exec "$NS_APP" ip -6 route add default via "$JOOL_SIDE_APP_IPV6" dev "$VETH_JOOL_APP"
+sudo ip netns exec "$NS_APP" ip -6 route add default via "$LINK_LOCAL_JOOL_NS" dev "$VETH_JOOL_APP"
 
+# 2.7 set route for link-local chain
+# Route traffic destined for jool-app-ns through the app-side interface
+sudo ip netns exec "$NS_JOOL" ip -6 route add "$JOOL_APP_SIDE_IPV6"/128 via "$LINK_LOCAL_JOOL_APP_NS" dev "$VETH_APP_JOOL"
+
+# Route traffic from host to jool-app-ns via jool-ns  
+sudo ip -6 route add "$JOOL_APP_SIDE_IPV6"/128 via "$JOOL_LINK_LOCAL_NS" dev "$VETH_JOOL_HOST"
 
 # ------------------------------------------------------------
 
