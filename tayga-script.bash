@@ -99,3 +99,7 @@ sudo ip netns exec "$NS" sysctl -w net.ipv6.conf.all.forwarding=1
 
 # 2.9 start tayga inside the namespace
 sudo ip netns exec "$NS" tayga 
+
+echo "--------------------------------"
+echo "tayga-ns setup complete!"
+echo "--------------------------------"

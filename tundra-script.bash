@@ -128,3 +128,7 @@ sudo ip netns exec "$NS_TUNDRA" sysctl -w net.ipv6.conf.all.forwarding=1
 
 # 2.9 start tundra
 sudo ip netns exec "$NS_TUNDRA" /home/ubuntu/tundra-nat64/build/tundra-nat64 --config-file="$TUNDRA_CONF"
+
+echo "--------------------------------"
+echo "tundra-ns setup complete!"
+echo "--------------------------------"

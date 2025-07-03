@@ -118,8 +118,6 @@ sudo ip netns exec "$NS_APP" ip -6 route add default via "$LINK_LOCAL_JOOL_NS" d
 # Route traffic destined for jool-app-ns through the app-side interface
 sudo ip netns exec "$NS_JOOL" ip -6 route add "$JOOL_APP_SIDE_IPV6"/128 via "$LINK_LOCAL_JOOL_APP_NS" dev "$VETH_APP_JOOL"
 
-# Route traffic from host to jool-app-ns via jool-ns  
-sudo ip -6 route add "$JOOL_APP_SIDE_IPV6"/128 via "$JOOL_LINK_LOCAL_NS" dev "$VETH_JOOL_HOST"
 
 # ------------------------------------------------------------
 
@@ -142,3 +140,7 @@ sudo ip netns exec "$NS_JOOL" sysctl -w net.ipv4.conf.all.forwarding=1
 # 3.3 create SIIT instance in namespace 
 sudo ip netns exec "$NS_JOOL" jool_siit instance add --netfilter --pool6 "$NAT64_PREFIX"
 sudo ip netns exec "$NS_JOOL" jool_siit eamt add "$IPV4_APP" "$JOOL_NS_IPV6"
+
+echo "--------------------------------"
+echo "jool-ns setup complete!"
+echo "--------------------------------"
