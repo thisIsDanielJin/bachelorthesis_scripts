@@ -1,0 +1,25 @@
+{
+	"start":	{
+		"connected":	[],
+		"version":	"iperf 3.16",
+		"system_info":	"Linux i-0316e72a8af6a7464 6.8.0-1031-aws #33-Ubuntu SMP Fri Jun 20 18:11:07 UTC 2025 x86_64",
+		"timestamp":	{
+			"time":	"Thu, 03 Jul 2025 14:26:18 GMT",
+			"timesecs":	1751552778
+		},
+		"connecting_to":	{
+			"host":	"192.0.0.171",
+			"port":	5201
+		},
+		"cookie":	"coj7mdclorzcsanedylxyfzh6bo6rsn5efyl",
+		"target_bitrate":	10000000,
+		"fq_rate":	0,
+		"sock_bufsize":	0,
+		"sndbuf_actual":	212992,
+		"rcvbuf_actual":	212992
+	},
+	"intervals":	[],
+	"end":	{
+	},
+	"error":	"unable to read from stream socket: Resource temporarily unavailable"
+}

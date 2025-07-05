@@ -85,6 +85,51 @@ sudo ip netns exec "$NS_IPERF" iperf3 -s -V
 sudo ip netns exec tayga-ns iperf3 -c 2a05:d014:144f:5f00:20d2::400 -V
 
 
+# ------------------------------------------------------------
+
+# Full script for measurments
+
+# Namespaces to test
+NAMESPACES=(tayga-ns jool-app-ns tundra-ns)
+
+# Target addresses (IPv4 and IPv6)
+ADDRESSES=(192.0.0.171 2a05:d014:144f:5f00:20d2::400)
+
+# Test durations (in seconds)
+declare -A DURATIONS
+DURATIONS=( ["30s"]=30 ["1min"]=60 ["2min"]=120 )
+
+# Protocols: test both TCP and UDP
+PROTOS=("tcp" "udp")
+
+# Start the tests
+for ns in "${NAMESPACES[@]}"; do
+  for addr in "${ADDRESSES[@]}"; do
+    # If address contains ':', treat as IPv6
+    if [[ $addr == *:* ]]; then
+      ipver="-6"
+      safe_addr=${addr//:/_}
+    else
+      ipver=""
+      safe_addr=$addr
+    fi
+    for label in "${!DURATIONS[@]}"; do
+      duration=${DURATIONS[$label]}
+      for proto in "${PROTOS[@]}"; do
+        if [[ $proto == "tcp" ]]; then
+          cmd="ip netns exec $ns iperf3 $ipver -c $addr -t $duration --json > ${ns}_${safe_addr}_$proto_$label.json"
+        else
+          # Specify bandwidth for UDP, e.g., 10 Mbps
+          cmd="ip netns exec $ns iperf3 $ipver -c $addr -u -b 10M -t $duration --json > ${ns}_${safe_addr}_$proto_$label.json"
+        fi
+        echo "Running: $cmd"
+        eval "$cmd"
+      done
+    done
+  done
+done
+
+echo "All tests finished."
 
 
 
