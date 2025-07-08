@@ -97,10 +97,10 @@ ADDRESSES=(192.0.0.171 2a05:d014:144f:5f00:20d2::400)
 
 # Test durations (in seconds)
 declare -A DURATIONS
-DURATIONS=( ["30s"]=30 ["1min"]=60 ["2min"]=120 )
+DURATIONS=( ["30s"]=30 ["2min"]=120 )
 
-# Protocols: test both TCP and UDP
-PROTOS=("tcp" "udp")
+# Protocols: test UDP 
+PROTOS=("udp")
 
 # Start the tests
 for ns in "${NAMESPACES[@]}"; do
@@ -117,7 +117,7 @@ for ns in "${NAMESPACES[@]}"; do
       duration=${DURATIONS[$label]}
       for proto in "${PROTOS[@]}"; do
         if [[ $proto == "tcp" ]]; then
-          cmd="ip netns exec $ns iperf3 $ipver -c $addr -t $duration --json > ${ns}_${safe_addr}_$proto_$label.json"
+          cmd="ip netns exec $ns iperf3 $ipver -c $addr -t $duration --json > ${ns}_${safe_addr}_${proto}_${label}.json"
         else
           # Specify bandwidth for UDP, e.g., 10 Mbps
           cmd="ip netns exec $ns iperf3 $ipver -c $addr -u -b 10M -t $duration --json > ${ns}_${safe_addr}_$proto_$label.json"
@@ -130,6 +130,14 @@ for ns in "${NAMESPACES[@]}"; do
 done
 
 echo "All tests finished."
+
+
+# ------------------------------------------------------------
+
+# Copy json files to host (FROM HOST!)
+
+
+scp -i ~/.ssh/id_aws ubuntu@18.159.109.182:'~/*.json' ~/Desktop/
 
 
 
