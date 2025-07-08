@@ -2,6 +2,7 @@ import os
 import json
 import matplotlib.pyplot as plt
 from collections import defaultdict
+import numpy as np
 
 FOLDER = "TCP_1/Messungen"
 IMG_DIR = "img"  # Directory to save plot images
@@ -56,6 +57,10 @@ ip_types = ["IPv4", "IPv6"]
 time_labels = ["30s", "2min"]
 
 # ---- Throughput Plot ----
+def moving_average(x, w=5):
+    """Compute moving average using window w."""
+    return np.convolve(x, np.ones(w)/w, mode='valid')
+
 fig_thr, axs_thr = plt.subplots(2, 2, figsize=(14, 10))
 axs_thr = axs_thr.flatten()
 
@@ -70,15 +75,38 @@ for i, ip_type in enumerate(ip_types):
             continue
         for ns, (times, throughputs, _) in this_case.items():
             color = namespace_colors.get(ns, None)
-            ax.plot(times, throughputs, marker='o', markersize=4, label=ns, color=color)
+            if not times or not throughputs:
+                continue
+
+            # Choose smoothing window for time label
+            w = 10 if time_label == "2min" else 5
+            w = min(w, len(throughputs))  # Ensure window isn't too big
+
+            # ---- Plot smoothed line ----
+            if len(throughputs) >= w and w > 1:
+                sm_through = moving_average(throughputs, w)
+                sm_times = moving_average(times, w)
+                ax.plot(sm_times, sm_through, label=f"{ns} (smoothed)", color=color, linewidth=2)
+
+                # Plot raw, but very faint and only as points (or line):
+                ax.plot(times, throughputs, '.', alpha=0.15, color=color, markersize=1, zorder=1)
+            else:
+                # For very short series: plot only as-is
+                ax.plot(times, throughputs, '-', marker='o', label=ns, color=color, markersize=3, linewidth=1)
+            
+            # Mean line across full data (for reference)
             if throughputs:
                 mean_thr = sum(throughputs) / len(throughputs)
-                ax.axhline(mean_thr, color=color, linestyle='--', alpha=0.5)
+                ax.axhline(mean_thr, color=color, linestyle='--', alpha=0.5, linewidth=1)
+
         ax.set_title(f"Throughput: {ip_type}, {time_label}")
         ax.set_xlabel("Time [s]")
         ax.set_ylabel("Throughput [Gbit/s]")
-        ax.grid(True)
-        ax.legend()
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=9)
+        # Optionally: set lower y limit to zero for clarity
+        ax.set_ylim(bottom=0)
+
 fig_thr.suptitle("TCP Throughput Over Time for Each Scenario", fontsize=16)
 plt.tight_layout(rect=[0, 0, 1, 0.96])
 
@@ -87,6 +115,7 @@ throughput_plot_path = os.path.join(IMG_DIR, "tcp_throughput_over_time.png")
 plt.savefig(throughput_plot_path, dpi=200)
 print(f"Throughput plot saved to {throughput_plot_path}")
 plt.show()
+
 
 # ---- RTT Plot ----
 fig_rtt, axs_rtt = plt.subplots(2, 2, figsize=(14, 10))
@@ -117,6 +146,6 @@ plt.tight_layout(rect=[0, 0, 1, 0.96])
 
 # ---- SAVE RTT PLOT ----
 rtt_plot_path = os.path.join(IMG_DIR, "tcp_rtt_over_time.png")
-plt.savefig(rtt_plot_path, dpi=200)
+#plt.savefig(rtt_plot_path, dpi=200)
 print(f"RTT plot saved to {rtt_plot_path}")
 plt.show()
