@@ -78,7 +78,7 @@ sudo ip netns exec "$NS_IPERF" apt-get update
 sudo ip netns exec "$NS_IPERF" apt-get install iperf3
 
 
-# 3.2 run iperf3 server
+# 3.2 run iperf3 server from iperf-ns
 sudo ip netns exec "$NS_IPERF" iperf3 -s -V
 
 # 3.3 run iperf3 client from tayga namespace
@@ -99,8 +99,8 @@ ADDRESSES=(192.0.0.171 2a05:d014:144f:5f00:20d2::400)
 declare -A DURATIONS
 DURATIONS=( ["30s"]=30 ["2min"]=120 )
 
-# Protocols: test UDP 
-PROTOS=("udp")
+# Protocols: test UDP / TCP 
+PROTOS=("tcp")
 
 # Start the tests
 for ns in "${NAMESPACES[@]}"; do

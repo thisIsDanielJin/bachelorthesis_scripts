@@ -127,6 +127,9 @@ sudo ip netns exec "$NS_TUNDRA" ip route add default via "$CLAT_IPV4" dev "$TUN_
 sudo ip netns exec "$NS_TUNDRA" sysctl -w net.ipv6.conf.all.forwarding=1
 
 # 2.9 start tundra
+TUNDRA_CONF="/etc/tundra-clat.conf"
+NS_TUNDRA="tundra-ns"
+
 sudo ip netns exec "$NS_TUNDRA" /home/ubuntu/tundra-nat64/build/tundra-nat64 --config-file="$TUNDRA_CONF"
 
 echo "--------------------------------"
