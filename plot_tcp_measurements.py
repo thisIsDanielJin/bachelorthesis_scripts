@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import numpy as np
 
-FOLDER = "hpet_clocktime/TCP"
+FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "hpet"
+CLOCKTIME_LABEL = "tsc"
 
 os.makedirs(IMG_DIR, exist_ok=True)
 
