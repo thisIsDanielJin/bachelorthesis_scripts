@@ -6,10 +6,10 @@ import numpy as np
 
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/PingSingleMachineRTT"  # folder containing *.txt ping outputs
+FOLDER = "RawMessungen/PingAWS"  # folder containing *.txt ping outputs
 IMG_DIR = "img"
 CLOCKTIME_LABEL = "Ping"
-SCENARIO_NAME = "SingleLocal"  # e.g., "AWS", "SingleLocal", "DoubleLocal"
+SCENARIO_NAME = "AWS"  # e.g., "AWS", "SingleLocal", "DoubleLocal"
 
 # Annotation settings
 ANNOTATION_FMT = "{:.3f} ms"  # label format for RTT values
@@ -44,6 +44,7 @@ RE_TIME = re.compile(r"time[=<]?([\d.]+)\s*ms", re.IGNORECASE)
 # Optional hard overrides for IP labels (filename token -> pretty label)
 IP_LABEL_OVERRIDES = {
     "fd00_64_64_5f00_20d2__400": "fd00:64:64:5f00:20d2::400",
+    "2a05_d014_144f_5f00_20d2__400": "2a05:d014:144f:5f00:20d2::400",
 }
 
 
