@@ -3,6 +3,7 @@ import re
 import matplotlib.pyplot as plt
 from collections import defaultdict
 import numpy as np
+from matplotlib.ticker import FuncFormatter, NullFormatter
 
 
 # ================== CONFIG ==================
@@ -226,6 +227,8 @@ for ylog in [False, True]:
 
         if ylog:
             ax.set_yscale("log")
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda x, pos: f"{x:.0f}"))
+
         ax.margins(x=X_MARGIN, y=Y_MARGIN)
         ax.set_xlim(left=0)
         if not ylog:
