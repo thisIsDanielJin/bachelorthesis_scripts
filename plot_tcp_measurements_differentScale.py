@@ -5,11 +5,10 @@ from collections import defaultdict
 import numpy as np
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/AWS_hpet_clocktime"
+FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "hpet"
-SCENARIO_NAME = "AWS"  # <-- change to "AWS" or "SingleLocal" or "DoubleLocal"
-
+CLOCKTIME_LABEL = "tsc"
+SCENARIO_NAME = "Single Local" 
 # Annotation settings
 ANNOTATION_FMT = "{:.2f}"  # throughput label format in Gbit/s
 MAX_LABEL_OFFSET = (0, 6)  # pixel offset for the max point label (above)
@@ -29,6 +28,19 @@ namespace_colors = {
     "tundra-ns": "red",
     "jool-app-ns": "green",
     "tayga-ns": "blue",
+}
+
+NAMESPACE_DISPLAY_NAME = {
+    "tundra-ns": "tundra",
+    "jool-app-ns": "jool",
+    "tayga-ns": "tayga",
+}
+
+
+# Display name mapping for plot titles
+IP_DISPLAY_NAME = {
+    "IPv4": "IPv4 Translation",
+    "IPv6": "IPv6 Baseline",
 }
 
 # Load data
@@ -62,6 +74,7 @@ for jsonfile in FILES:
 
 ip_types = ["IPv4", "IPv6"]
 time_labels = ["30s", "2min"]
+
 
 # --- Helper for annotations ---
 def annotate_extrema(ax, xs, ys, color):
@@ -106,9 +119,10 @@ for ylog in [False, True]:
             ax = axs_thr[idx]
             key = (ip_type, time_label)
             this_case = by_scenario.get(key, {})
+            display_ip = IP_DISPLAY_NAME.get(ip_type, ip_type)
 
             if not this_case:
-                ax.set_title(f"No data: {ip_type}, {time_label}")
+                ax.set_title(f"No data: {display_ip}, {time_label}")
                 ax.set_xlabel("Time [s]")
                 ax.set_ylabel("Throughput [Gbit/s]")
                 ax.grid(True, alpha=0.3)
@@ -120,6 +134,16 @@ for ylog in [False, True]:
                     ax.set_ylim(bottom=0)
                 ax.autoscale_view()
                 continue
+            
+            if ip_type == "IPv6":
+                legend_map = {
+                    "tundra-ns": "1 Hop",
+                    "tayga-ns": "1 Hop",
+                    "jool-app-ns": "2 Hops",
+                }
+            else:
+                legend_map = NAMESPACE_DISPLAY_NAME
+
 
             for ns, (times, throughputs) in this_case.items():
                 color = namespace_colors.get(ns, None)
@@ -148,14 +172,17 @@ for ylog in [False, True]:
                 )
 
                 # Scatter points
+                marker_style = "o" if ip_type == "IPv4" else "x"
                 ax.scatter(
                     times2, throughputs2,
-                    label=ns, color=color, s=12, alpha=0.85, zorder=2
+                    label=legend_map.get(ns, ns),
+                    color=color, s=20, alpha=0.85, zorder=2,
+                    marker=marker_style
                 )
 
                 annotate_extrema(ax, list(times2), list(throughputs2), color)
 
-            ax.set_title(f"Throughput: {ip_type}, {time_label}")
+            ax.set_title(f"{display_ip}, {time_label}")
             ax.set_xlabel("Time [s]")
             ax.set_ylabel("Throughput [Gbit/s]")
             ax.grid(True, alpha=0.3)
@@ -170,18 +197,22 @@ for ylog in [False, True]:
             ax.autoscale_view()
 
     # Global title with SCENARIO_NAME
+    yscale_name = "Log" if ylog else "Linear"
     fig_thr.suptitle(
-        f"{SCENARIO_NAME} - TCP Throughput Over Time ({CLOCKTIME_LABEL}) "
-        f"(Y {'log' if ylog else 'linear'})",
+        f"Environment: {SCENARIO_NAME}\n"
+        f"TCP Throughput Over Time\n"
+        f"Clocksource: {CLOCKTIME_LABEL}, Scale: {yscale_name}",
         fontsize=16,
     )
 
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    yscale_name = "log" if ylog else "linear"
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+    yscale_name_file = yscale_name.lower()
     throughput_plot_path = os.path.join(
         IMG_DIR,
-        f"{SCENARIO_NAME}_tcp_throughput_over_time_{CLOCKTIME_LABEL}_{yscale_name}.png"
+        f"{SCENARIO_NAME}_tcp_differentScale_{CLOCKTIME_LABEL}_{yscale_name_file}.png"
     )
     plt.savefig(throughput_plot_path, dpi=200)
     print(f"Throughput plot saved to {throughput_plot_path}")
     plt.close(fig_thr)
+
