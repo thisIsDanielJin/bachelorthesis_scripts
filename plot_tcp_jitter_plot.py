@@ -6,9 +6,9 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
+FOLDER = "RawMessungen/LocalSingle_hpet_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "tsc"
+CLOCKTIME_LABEL = "hpet"
 SCENARIO_NAME = "Single"
 
 # Annotation settings
@@ -122,50 +122,52 @@ def annotate_extrema(ax, xs, ys, color):
         )
 
 
-def compute_shared_ylim_per_time_label(by_scenario, ip_types, time_labels, ylog, y_margin):
-    """Compute shared y-axis limits across IPv4 and IPv6 for consistency."""
+def compute_ylim_per_ip_type(by_scenario, ip_types, time_labels, ylog, y_margin):
+    """Compute y-axis limits separately for IPv4 and IPv6."""
     limits = {}
     for tl in time_labels:
-        vals = []
+        limits[tl] = {}
         for ip in ip_types:
             case = by_scenario.get((ip, tl), {})
+            vals = []
             for _, (_, ths) in case.items():
                 if ylog:
                     vals.extend([th for th in ths if th is not None and not np.isnan(th) and th > 0])
                 else:
                     vals.extend([th for th in ths if th is not None and not np.isnan(th)])
-        if not vals:
-            continue
-
-        vmax = float(np.max(vals)) if vals else None
-        if vmax is None or not np.isfinite(vmax):
-            continue
-
-        if ylog:
-            pos_vals = [v for v in vals if v > 0]
-            if not pos_vals:
+            
+            if not vals:
                 continue
-            vmin = float(np.min(pos_vals))
-            ymin = vmin / (1.0 + y_margin)
-            ymax = vmax * (1.0 + y_margin)
-            if ymin <= 0:
-                ymin = vmin / 1.1
-                if ymin <= 0:
-                    ymin = max(vmin, 1e-6)
-        else:
-            ymin = 0.0
-            ymax = vmax * (1.0 + y_margin)
-            if not np.isfinite(ymax) or ymax <= 0:
-                ymin, ymax = 0.0, 1.0
 
-        limits[tl] = (ymin, ymax)
+            vmax = float(np.max(vals)) if vals else None
+            if vmax is None or not np.isfinite(vmax):
+                continue
+
+            if ylog:
+                pos_vals = [v for v in vals if v > 0]
+                if not pos_vals:
+                    continue
+                vmin = float(np.min(pos_vals))
+                ymin = vmin / (1.0 + y_margin)
+                ymax = vmax * (1.0 + y_margin)
+                if ymin <= 0:
+                    ymin = vmin / 1.1
+                    if ymin <= 0:
+                        ymin = max(vmin, 1e-6)
+            else:
+                ymin = 0.0
+                ymax = vmax * (1.0 + y_margin)
+                if not np.isfinite(ymax) or ymax <= 0:
+                    ymin, ymax = 0.0, 1.0
+
+            limits[tl][ip] = (ymin, ymax)
     return limits
 
 
 # ================== PLOTS ==================
 for ylog in [False, True]:
-    # Pre-compute shared y-limits
-    shared_ylim = compute_shared_ylim_per_time_label(by_scenario, ip_types, time_labels, ylog, Y_MARGIN)
+    # Pre-compute y-limits for each IP type separately
+    ip_ylim = compute_ylim_per_ip_type(by_scenario, ip_types, time_labels, ylog, Y_MARGIN)
 
     ncols = max(1, len(time_labels))
     nrows = 1
@@ -178,103 +180,131 @@ for ylog in [False, True]:
         axs_thr = axs_thr.flatten()
 
     for j, time_label in enumerate(time_labels):
-        ax = axs_thr[j]
+        ax_left = axs_thr[j]
+        ax_right = ax_left.twinx()  # Create right y-axis
+        
         plotted_any = False
 
-        # Plot both IP types on the same axis for this time interval
-        for ip_type in ip_types:
-            this_case = by_scenario.get((ip_type, time_label), {})
-
-            # Legend labels
-            if ip_type == "IPv6":
-                legend_map = {
-                    "tundra-ns": "1 Hop",
-                    "jool-app-ns": "2 Hops",
-                    # Removed "tayga-ns": "1 Hop" - we don't need this redundant blue baseline
-                }
-                marker_style = "x"
-            else:
-                legend_map = {
-                    "tundra-ns": "tundra",
-                    "jool-app-ns": "jool",
-                    "tayga-ns": "tayga",
-                }
-                marker_style = "o"
-
-            for ns, (times, throughputs) in this_case.items():
-                # Skip tayga-ns for IPv6 baseline since it's redundant with tundra-ns
-                if ip_type == "IPv6" and ns == "tayga-ns":
-                    continue
-                    
-                color = namespace_colors.get(ns, None)
+        # Plot IPv6 (baseline) on left axis
+        ipv6_case = by_scenario.get(("IPv6", time_label), {})
+        legend_map_ipv6 = {
+            "tundra-ns": "1 Hop",
+            "jool-app-ns": "2 Hops",
+        }
+        
+        for ns, (times, throughputs) in ipv6_case.items():
+            # Skip tayga-ns for IPv6 baseline since it's redundant with tundra-ns
+            if ns == "tayga-ns":
+                continue
                 
-                # Make IPv6 baseline colors more distinct and noticeable
-                if ip_type == "IPv6":
-                    if color == "red":
-                        color = "orange"
-                    elif color == "green":
-                        color = "purple"
-                    elif color == "blue":
-                        color = "cyan"
+            color = namespace_colors.get(ns, None)
+            # Make IPv6 baseline colors more distinct
+            if color == "red":
+                color = "orange"
+            elif color == "green":
+                color = "purple"
 
-                if ylog:
-                    zipped = [
-                        (t, th)
-                        for t, th in zip(times, throughputs)
-                        if th is not None and t is not None and not np.isnan(th) and not np.isnan(t) and th > 0
-                    ]
-                else:
-                    zipped = [
-                        (t, th)
-                        for t, th in zip(times, throughputs)
-                        if th is not None and t is not None and not np.isnan(th) and not np.isnan(t)
-                    ]
-                if not zipped:
-                    continue
+            if ylog:
+                zipped = [
+                    (t, th) for t, th in zip(times, throughputs)
+                    if th is not None and t is not None and not np.isnan(th) and not np.isnan(t) and th > 0
+                ]
+            else:
+                zipped = [
+                    (t, th) for t, th in zip(times, throughputs)
+                    if th is not None and t is not None and not np.isnan(th) and not np.isnan(t)
+                ]
+            if not zipped:
+                continue
 
-                times2, throughputs2 = zip(*zipped)
+            times2, throughputs2 = zip(*zipped)
 
-                # Connect points
-                ax.plot(
-                    times2, throughputs2,
-                    color=color, alpha=0.3, linewidth=1, zorder=1
-                )
+            # Plot on left axis
+            ax_left.plot(times2, throughputs2, color=color, alpha=0.3, linewidth=1, zorder=1)
+            ax_left.scatter(
+                times2, throughputs2,
+                label=legend_map_ipv6.get(ns, f"{ns} (IPv6)"),
+                color=color, s=8, alpha=0.85, zorder=2, marker='x'
+            )
+            annotate_extrema(ax_left, list(times2), list(throughputs2), color)
+            plotted_any = True
 
-                # Scatter points
-                scatter_alpha = 0.85  # Same alpha for both baseline and transition
-                ax.scatter(
-                    times2, throughputs2,
-                    label=legend_map.get(ns, f"{ns} ({ip_type})"),
-                    color=color, s=8, alpha=scatter_alpha, zorder=2,
-                    marker=marker_style
-                )
+        # Plot IPv4 (transition) on right axis
+        ipv4_case = by_scenario.get(("IPv4", time_label), {})
+        legend_map_ipv4 = {
+            "tundra-ns": "tundra",
+            "jool-app-ns": "jool",
+            "tayga-ns": "tayga",
+        }
+        
+        for ns, (times, throughputs) in ipv4_case.items():
+            color = namespace_colors.get(ns, None)
 
-                annotate_extrema(ax, list(times2), list(throughputs2), color)
-                plotted_any = True
+            if ylog:
+                zipped = [
+                    (t, th) for t, th in zip(times, throughputs)
+                    if th is not None and t is not None and not np.isnan(th) and not np.isnan(t) and th > 0
+                ]
+            else:
+                zipped = [
+                    (t, th) for t, th in zip(times, throughputs)
+                    if th is not None and t is not None and not np.isnan(th) and not np.isnan(t)
+                ]
+            if not zipped:
+                continue
 
-        # Titles and axes
-        ax.set_title(f"{time_label}")
-        ax.set_xlabel("Time [s]")
-        ax.set_ylabel("Throughput [Gbit/s]")
-        ax.grid(True, alpha=0.3)
+            times2, throughputs2 = zip(*zipped)
+
+            # Plot on right axis
+            ax_right.plot(times2, throughputs2, color=color, alpha=0.3, linewidth=1, zorder=1)
+            ax_right.scatter(
+                times2, throughputs2,
+                label=legend_map_ipv4.get(ns, f"{ns} (IPv4)"),
+                color=color, s=8, alpha=0.85, zorder=2, marker='o'
+            )
+            annotate_extrema(ax_right, list(times2), list(throughputs2), color)
+            plotted_any = True
+
+        # Configure axes
+        ax_left.set_title(f"{time_label}")
+        ax_left.set_xlabel("Time [s]")
+        ax_left.set_ylabel("IPv6 Baseline", color='purple')
+        ax_right.set_ylabel("IPv4 Transition", color='blue')
+        
+        ax_left.grid(True, alpha=0.3)
+        
         if ylog:
-            ax.set_yscale("log")
-        ax.margins(x=X_MARGIN, y=Y_MARGIN)
-        ax.set_xlim(left=0)
+            ax_left.set_yscale("log")
+            ax_right.set_yscale("log")
+        
+        ax_left.margins(x=X_MARGIN)
+        ax_right.margins(x=X_MARGIN)
+        ax_left.set_xlim(left=0)
 
-        # Apply shared y-limits
-        if time_label in shared_ylim:
-            ax.set_ylim(*shared_ylim[time_label])
-        else:
-            if not ylog:
-                ax.set_ylim(bottom=0)
+        # Apply separate y-limits
+        if time_label in ip_ylim:
+            if "IPv6" in ip_ylim[time_label]:
+                ax_left.set_ylim(*ip_ylim[time_label]["IPv6"])
+            elif not ylog:
+                ax_left.set_ylim(bottom=0)
+                
+            if "IPv4" in ip_ylim[time_label]:
+                ax_right.set_ylim(*ip_ylim[time_label]["IPv4"])
+            elif not ylog:
+                ax_right.set_ylim(bottom=0)
+
+        # Color the y-axis labels to match the data
+        ax_left.tick_params(axis='y', labelcolor='purple')
+        ax_right.tick_params(axis='y', labelcolor='blue')
 
         if plotted_any:
-            # Get legend positions for this time interval
-            legend_pos = LEGEND_POSITIONS.get(time_label, {"main": "center right", "marker": "center left"})
+            # Create combined legend
+            lines_left, labels_left = ax_left.get_legend_handles_labels()
+            lines_right, labels_right = ax_right.get_legend_handles_labels()
             
             # Main legend for the data
-            legend1 = ax.legend(fontsize=9, loc=legend_pos["main"])
+            legend1 = ax_left.legend(lines_left + lines_right, labels_left + labels_right, 
+                                   fontsize=9, loc="upper right")
             
             # Add shape legend
             shape_legend_elements = [
@@ -283,24 +313,23 @@ for ylog in [False, True]:
                 Line2D([0], [0], marker='o', color='black', linestyle='None', 
                        markersize=6, label='IPv4 Transition')
             ]
-            legend2 = ax.legend(handles=shape_legend_elements, fontsize=9, 
-                              loc=legend_pos["marker"], title='Marker Types')
+            legend2 = ax_left.legend(handles=shape_legend_elements, fontsize=9, 
+                                   loc="upper left", title='Marker Types')
             
             # Add the first legend back
-            ax.add_artist(legend1)
+            ax_left.add_artist(legend1)
 
         else:
-            ax.text(0.5, 0.5, f"No data for {time_label}", ha="center", va="center", transform=ax.transAxes)
+            ax_left.text(0.5, 0.5, f"No data for {time_label}", ha="center", va="center", transform=ax_left.transAxes)
 
     # Global title
     yscale_name = "Log" if ylog else "Linear"
     
-
     plt.tight_layout(rect=[0, 0, 1, 0.88])
     yscale_name_file = yscale_name.lower()
     throughput_plot_path = os.path.join(
         IMG_DIR,
-        f"{SCENARIO_NAME}_tcp_sameScale_{CLOCKTIME_LABEL}_{yscale_name_file}.svg"
+        f"{SCENARIO_NAME}_tcp_dualAxis_{CLOCKTIME_LABEL}_{yscale_name_file}.svg"
     )
     plt.savefig(throughput_plot_path, format='svg')
     print(f"Throughput plot saved to {throughput_plot_path}")
