@@ -6,16 +6,28 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/AWS_kvm-clock_clocktime"
+FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "kvm-clock"
-SCENARIO_NAME = "AWS"
+CLOCKTIME_LABEL = "tsc"
+SCENARIO_NAME = "Single"
 
 # Annotation settings
 ANNOTATION_FMT = "{:.2f}"  # throughput label format in Gbit/s
 MAX_LABEL_OFFSET = (0, 6)  # pixel offset for the max point label (above)
 MIN_LABEL_OFFSET = (0, -10)  # pixel offset for the min point label (below)
 ANNOTATION_FONTSIZE = 7
+
+# Legend positioning settings
+LEGEND_POSITIONS = {
+    "30s": {
+        "main": "center right",
+        "marker": "center left"
+    },
+    "2min": {
+        "main": "center right",
+        "marker": "center left"
+    }
+}
 
 # Margins (relative fraction of data range)
 X_MARGIN = 0.02  # ~2% extra space on the right (left stays pinned at 0)
@@ -177,8 +189,8 @@ for ylog in [False, True]:
             if ip_type == "IPv6":
                 legend_map = {
                     "tundra-ns": "1 Hop",
-                    "tayga-ns": "1 Hop",
                     "jool-app-ns": "2 Hops",
+                    # Removed "tayga-ns": "1 Hop" - we don't need this redundant blue baseline
                 }
                 marker_style = "x"
             else:
@@ -190,16 +202,20 @@ for ylog in [False, True]:
                 marker_style = "o"
 
             for ns, (times, throughputs) in this_case.items():
+                # Skip tayga-ns for IPv6 baseline since it's redundant with tundra-ns
+                if ip_type == "IPv6" and ns == "tayga-ns":
+                    continue
+                    
                 color = namespace_colors.get(ns, None)
                 
-                # Make IPv6 baseline colors lighter
+                # Make IPv6 baseline colors more distinct and noticeable
                 if ip_type == "IPv6":
                     if color == "red":
-                        color = "lightcoral"
+                        color = "orange"
                     elif color == "green":
-                        color = "lightgreen"
+                        color = "purple"
                     elif color == "blue":
-                        color = "lightblue"
+                        color = "cyan"
 
                 if ylog:
                     zipped = [
@@ -225,10 +241,11 @@ for ylog in [False, True]:
                 )
 
                 # Scatter points
+                scatter_alpha = 0.85  # Same alpha for both baseline and transition
                 ax.scatter(
                     times2, throughputs2,
                     label=legend_map.get(ns, f"{ns} ({ip_type})"),
-                    color=color, s=8, alpha=0.85, zorder=2,
+                    color=color, s=8, alpha=scatter_alpha, zorder=2,
                     marker=marker_style
                 )
 
@@ -253,10 +270,13 @@ for ylog in [False, True]:
                 ax.set_ylim(bottom=0)
 
         if plotted_any:
-            # Main legend for the data - moved to center right
-            legend1 = ax.legend(fontsize=9, loc='center right')
+            # Get legend positions for this time interval
+            legend_pos = LEGEND_POSITIONS.get(time_label, {"main": "center right", "marker": "center left"})
             
-            # Add shape legend - moved to lower left
+            # Main legend for the data
+            legend1 = ax.legend(fontsize=9, loc=legend_pos["main"])
+            
+            # Add shape legend
             shape_legend_elements = [
                 Line2D([0], [0], marker='x', color='black', linestyle='None', 
                        markersize=8, label='IPv6 Baseline'),
@@ -264,7 +284,7 @@ for ylog in [False, True]:
                        markersize=6, label='IPv4 Transition')
             ]
             legend2 = ax.legend(handles=shape_legend_elements, fontsize=9, 
-                              loc='center left', title='Marker Types')
+                              loc=legend_pos["marker"], title='Marker Types')
             
             # Add the first legend back
             ax.add_artist(legend1)
