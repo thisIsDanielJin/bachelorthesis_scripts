@@ -6,9 +6,9 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
+FOLDER = "RawMessungen/LocalSingle_hpet_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "tsc"
+CLOCKTIME_LABEL = "hpet"
 SCENARIO_NAME = "Single"
 
 # Annotation settings
