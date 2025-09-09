@@ -8,10 +8,10 @@ from matplotlib.lines import Line2D
 
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/PingAWS"  # folder containing *.txt ping outputs
+FOLDER = "RawMessungen/PingDoubleMachineRTT"  # folder containing *.txt ping outputs
 IMG_DIR = "img"
 CLOCKTIME_LABEL = "Ping"
-SCENARIO_NAME = "AWS"  # e.g., "AWS", "SingleLocal", "DoubleLocal"
+SCENARIO_NAME = "Double"  # e.g., "AWS", "SingleLocal", "DoubleLocal"
 
 # Annotation settings
 ANNOTATION_FMT = "{:.3f} ms"  # label format for RTT values
@@ -32,11 +32,11 @@ namespace_colors_ipv4 = {
     "tayga-ns": "blue",
 }
 
-# Light colors for IPv6
+# Distinct colors for IPv6 baseline
 namespace_colors_ipv6 = {
-    "tundra-ns": "lightcoral",
-    "jool-app-ns": "lightgreen",
-    "tayga-ns": "lightblue",
+    "tundra-ns": "orange",
+    "jool-app-ns": "purple",
+    "tayga-ns": "cyan",  # Won't be used since we skip it
 }
 
 # Only 30s data
@@ -185,8 +185,8 @@ NAMESPACE_DISPLAY_NAME_IPV4 = {
 
 NAMESPACE_DISPLAY_NAME_IPV6 = {
     "tundra-ns": "1 Hop",
-    "tayga-ns": "1 Hop",
     "jool-app-ns": "2 Hops",
+    # Removed "tayga-ns": "1 Hop" - redundant with tundra-ns
 }
 
 # Make single plot combining IPv4 and IPv6
@@ -200,6 +200,10 @@ for ylog in [False, True]:
         this_case = by_case.get(key, {})
 
         for label, (xs, ys, ns) in this_case.items():
+            # Skip tayga-ns for IPv6 baseline since it's redundant with tundra-ns
+            if ip_type == "IPv6" and ns == "tayga-ns":
+                continue
+                
             # Use appropriate color palette and marker based on IP type
             if ip_type == "IPv4":
                 color = namespace_colors_ipv4.get(ns, None)
