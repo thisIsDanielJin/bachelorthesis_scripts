@@ -6,10 +6,10 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
+FOLDER = "RawMessungen/AWS_kvm-clock_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "tsc"
-SCENARIO_NAME = "Single"
+CLOCKTIME_LABEL = "kvm-clock"
+SCENARIO_NAME = "AWS"
 
 # Annotation settings
 ANNOTATION_FMT = "{:.2f}"  # throughput label format in Gbit/s
@@ -167,12 +167,12 @@ for ylog in [False, True]:
     # Pre-compute shared y-limits
     shared_ylim = compute_shared_ylim_per_time_label(by_scenario, ip_types, time_labels, ylog, Y_MARGIN)
 
-    ncols = max(1, len(time_labels))
-    nrows = 1
-    fig_width = 7 * ncols
-    fig_height = 5
+    ncols = 1  # Changed from max(1, len(time_labels)) to 1
+    nrows = max(1, len(time_labels))  # Changed from 1 to max(1, len(time_labels))
+    fig_width = 7  # Changed from 7 * ncols to fixed width
+    fig_height = 5 * nrows  # Changed from 5 to 5 * nrows
     fig_thr, axs_thr = plt.subplots(nrows, ncols, figsize=(fig_width, fig_height))
-    if ncols == 1:
+    if nrows == 1:
         axs_thr = [axs_thr]
     else:
         axs_thr = axs_thr.flatten()
@@ -300,8 +300,8 @@ for ylog in [False, True]:
     yscale_name_file = yscale_name.lower()
     throughput_plot_path = os.path.join(
         IMG_DIR,
-        f"{SCENARIO_NAME}_tcp_sameScale_{CLOCKTIME_LABEL}_{yscale_name_file}.svg"
+        f"{SCENARIO_NAME}_tcp_sameScale_{CLOCKTIME_LABEL}_{yscale_name_file}.png"
     )
-    plt.savefig(throughput_plot_path, format='svg')
+    plt.savefig(throughput_plot_path, format='png')
     print(f"Throughput plot saved to {throughput_plot_path}")
     plt.close(fig_thr)

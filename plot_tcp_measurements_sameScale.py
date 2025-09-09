@@ -155,8 +155,8 @@ for ylog in [False, True]:
     # Pre-compute shared y-limits per time_label across IPv4 and IPv6 for this y-scale
     shared_ylim = compute_shared_ylim_per_time_label(by_scenario, ip_types, time_labels, ylog, Y_MARGIN)
 
-    fig_thr, axs_thr = plt.subplots(2, 2, figsize=(14, 10))
-    axs_thr = axs_thr.flatten()
+    # Change to vertical layout: 4 rows, 1 column
+    fig_thr, axs_thr = plt.subplots(4, 1, figsize=(12, 16))
 
     for i, ip_type in enumerate(ip_types):
         for j, time_label in enumerate(time_labels):
