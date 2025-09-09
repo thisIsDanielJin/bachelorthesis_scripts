@@ -6,9 +6,9 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/LocalSingle_hpet_clocktime"
+FOLDER = "RawMessungen/LocalSingle_tsc_clocktime"
 IMG_DIR = "img"
-CLOCKTIME_LABEL = "hpet"
+CLOCKTIME_LABEL = "tsc"
 SCENARIO_NAME = "Single"
 
 # Annotation settings
@@ -304,7 +304,7 @@ for ylog in [False, True]:
             
             # Main legend for the data
             legend1 = ax_left.legend(lines_left + lines_right, labels_left + labels_right, 
-                                   fontsize=9, loc="upper right")
+                                   fontsize=9, loc="center right")
             
             # Add shape legend
             shape_legend_elements = [
@@ -314,7 +314,7 @@ for ylog in [False, True]:
                        markersize=6, label='IPv4 Transition')
             ]
             legend2 = ax_left.legend(handles=shape_legend_elements, fontsize=9, 
-                                   loc="upper left", title='Marker Types')
+                                   loc="center left", title='Marker Types')
             
             # Add the first legend back
             ax_left.add_artist(legend1)
@@ -329,8 +329,8 @@ for ylog in [False, True]:
     yscale_name_file = yscale_name.lower()
     throughput_plot_path = os.path.join(
         IMG_DIR,
-        f"{SCENARIO_NAME}_tcp_dualAxis_{CLOCKTIME_LABEL}_{yscale_name_file}.svg"
+        f"{SCENARIO_NAME}_tcp_dualAxis_{CLOCKTIME_LABEL}_{yscale_name_file}.png"
     )
-    plt.savefig(throughput_plot_path, format='svg')
+    plt.savefig(throughput_plot_path, format='png')
     print(f"Throughput plot saved to {throughput_plot_path}")
     plt.close(fig_thr)
