@@ -6,10 +6,10 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 # ================== CONFIG ==================
-FOLDER = "RawMessungen/LocalSingle_hpet_clocktime"
+FOLDER = "RawMessungen/LocalDouble_hpet_clocktime"
 IMG_DIR = "img"
 CLOCKTIME_LABEL = "hpet"
-SCENARIO_NAME = "Single"
+SCENARIO_NAME = "LocalDouble"
 
 # Annotation settings
 ANNOTATION_FMT = "{:.2f}"  # throughput label format in Gbit/s
@@ -169,18 +169,11 @@ for ylog in [False, True]:
     # Pre-compute y-limits for each IP type separately
     ip_ylim = compute_ylim_per_ip_type(by_scenario, ip_types, time_labels, ylog, Y_MARGIN)
 
-    ncols = max(1, len(time_labels))
-    nrows = 1
-    fig_width = 7 * ncols
-    fig_height = 5
-    fig_thr, axs_thr = plt.subplots(nrows, ncols, figsize=(fig_width, fig_height))
-    if ncols == 1:
-        axs_thr = [axs_thr]
-    else:
-        axs_thr = axs_thr.flatten()
-
-    for j, time_label in enumerate(time_labels):
-        ax_left = axs_thr[j]
+    # Create separate plots for each time label
+    for time_label in time_labels:
+        fig_width = 10
+        fig_height = 5
+        fig_thr, ax_left = plt.subplots(1, 1, figsize=(fig_width, fig_height))
         ax_right = ax_left.twinx()  # Create right y-axis
         
         plotted_any = False
@@ -302,11 +295,11 @@ for ylog in [False, True]:
             lines_left, labels_left = ax_left.get_legend_handles_labels()
             lines_right, labels_right = ax_right.get_legend_handles_labels()
             
-            # Main legend for the data
+            # Main legend for the data - positioned outside the plot area
             legend1 = ax_left.legend(lines_left + lines_right, labels_left + labels_right, 
-                                   fontsize=9, loc="center right")
+                                   fontsize=9, bbox_to_anchor=(1.15, 1), loc='upper left')
             
-            # Add shape legend
+            # Add shape legend - positioned outside the plot area below the main legend
             shape_legend_elements = [
                 Line2D([0], [0], marker='x', color='black', linestyle='None', 
                        markersize=8, label='IPv6 Baseline'),
@@ -314,23 +307,23 @@ for ylog in [False, True]:
                        markersize=6, label='IPv4 Transition')
             ]
             legend2 = ax_left.legend(handles=shape_legend_elements, fontsize=9, 
-                                   loc="center left", title='Marker Types')
-            
+                                   bbox_to_anchor=(1.15, 0.7), loc='upper left', title='Marker Types')
+
             # Add the first legend back
             ax_left.add_artist(legend1)
 
         else:
             ax_left.text(0.5, 0.5, f"No data for {time_label}", ha="center", va="center", transform=ax_left.transAxes)
 
-    # Global title
-    yscale_name = "Log" if ylog else "Linear"
-    
-    plt.tight_layout(rect=[0, 0, 1, 0.88])
-    yscale_name_file = yscale_name.lower()
-    throughput_plot_path = os.path.join(
-        IMG_DIR,
-        f"{SCENARIO_NAME}_tcp_dualAxis_{CLOCKTIME_LABEL}_{yscale_name_file}.png"
-    )
-    plt.savefig(throughput_plot_path, format='png')
-    print(f"Throughput plot saved to {throughput_plot_path}")
-    plt.close(fig_thr)
+        # Save individual plot
+        yscale_name = "Log" if ylog else "Linear"
+        yscale_name_file = yscale_name.lower()
+        throughput_plot_path = os.path.join(
+            IMG_DIR,
+            f"{SCENARIO_NAME}_tcp_dualAxis_{CLOCKTIME_LABEL}_{time_label}_{yscale_name_file}.png"
+        )
+        
+        plt.tight_layout()
+        plt.savefig(throughput_plot_path, format='png', bbox_inches='tight')
+        print(f"Throughput plot saved to {throughput_plot_path}")
+        plt.close(fig_thr)
