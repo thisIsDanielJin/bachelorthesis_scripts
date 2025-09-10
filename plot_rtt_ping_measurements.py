@@ -278,8 +278,8 @@ for ylog in [False, True]:
     yname = "log" if ylog else "linear"
     out_path = os.path.join(
         IMG_DIR,
-        f"{SCENARIO_NAME}_ping_rtt_{CLOCKTIME_LABEL}_{TIME_LABEL}_{yname}.svg"
+        f"{SCENARIO_NAME}_ping_rtt_{CLOCKTIME_LABEL}_{TIME_LABEL}_{yname}.png"
     )
-    plt.savefig(out_path, format='svg')
+    plt.savefig(out_path, format='png')
     print(f"RTT plot saved to {out_path}")
     plt.close(fig)
