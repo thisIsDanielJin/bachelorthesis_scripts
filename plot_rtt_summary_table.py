@@ -196,10 +196,16 @@ def create_comparison_plot(data):
     IPv6 Baseline shows native IPv6 performance without translation.
     
     Visual Elements Explained:
-    - COLOR BARS represent different translation tools:
+    - COLOR BARS represent different translation tools/configurations:
+      IPv4 Transition (top row):
       * RED bars = Tundra (NAT64/DNS64 translator)
       * GREEN bars = Jool (Stateful NAT64 translator) 
-      * BLUE bars = Tayga (Stateless NAT64 translator)
+      * BLUE bars = Tayga (Stateless NAT64 translator) - Single/Double scenarios only
+      
+      IPv6 Baseline (bottom row):
+      * ORANGE bars = 1 Hop (Tundra configuration)
+      * PURPLE bars = 2 Hops (Jool configuration)
+      * Tayga is excluded from IPv6 baseline and AWS IPv4 transition
     
     - BLACK VERTICAL LINES (error bars) show the full range of RTT values:
       * Bottom of line = Minimum RTT observed
@@ -216,7 +222,7 @@ def create_comparison_plot(data):
     
     # Create comparison plots with explanatory title
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-
+    
 
     # Updated scenario and IP type mappings
     scenarios = ['AWS', 'Single', 'Double']
@@ -238,21 +244,61 @@ def create_comparison_plot(data):
             
             scenario_data = df[(df['scenario'] == scenario) & (df['ip_type'] == ip_type)]
             
+            # For IPv6 baseline, filter out tayga
+            if ip_type == 'IPv6':
+                scenario_data = scenario_data[~scenario_data['namespace'].str.contains('tayga')]
+            
+            # For AWS IPv4 transition, also filter out tayga
+            if scenario == 'AWS' and ip_type == 'IPv4':
+                scenario_data = scenario_data[~scenario_data['namespace'].str.contains('tayga')]
+            
             if scenario_data.empty:
                 ax.text(0.5, 0.5, 'No Data', ha='center', va='center', transform=ax.transAxes)
                 ax.set_title(f'{scenario_labels[scenario]} - {ip_type_labels[ip_type]}')
                 continue
             
-            # Create bar plot
-            tools = [ns.replace('-ns', '').replace('-app', '') for ns in scenario_data['namespace']]
+            # Create bar plot with modified tool names for IPv6 baseline
+            tools = []
+            for ns in scenario_data['namespace']:
+                clean_ns = ns.replace('-ns', '').replace('-app', '')
+                if ip_type == 'IPv6':
+                    if 'jool' in ns:
+                        tools.append('2 Hops')
+                    elif 'tundra' in ns:
+                        tools.append('1 Hop')
+                    else:
+                        tools.append(clean_ns)
+                else:
+                    tools.append(clean_ns)
+            
             avgs = scenario_data['avg']
             mins = scenario_data['min']
             maxs = scenario_data['max']
             
+            # Color mapping
+            colors = []
+            for ns in scenario_data['namespace']:
+                if ip_type == 'IPv6':
+                    # IPv6 baseline colors
+                    if 'tundra' in ns:
+                        colors.append('orange')  # 1 Hop
+                    elif 'jool' in ns:
+                        colors.append('purple')  # 2 Hops
+                    else:
+                        colors.append('gray')
+                else:
+                    # IPv4 transition colors (keep original)
+                    if 'tundra' in ns:
+                        colors.append('red')
+                    elif 'jool' in ns:
+                        colors.append('green')
+                    elif 'tayga' in ns:
+                        colors.append('blue')
+                    else:
+                        colors.append('gray')
+            
             x_pos = range(len(tools))
-            bars = ax.bar(x_pos, avgs, alpha=0.7, 
-                         color=['red' if 'tundra' in tool else 'green' if 'jool' in tool else 'blue' 
-                               for tool in scenario_data['namespace']])
+            bars = ax.bar(x_pos, avgs, alpha=0.7, color=colors)
             
             # Add error bars (min to max range)
             errors = [(avg - min_val, max_val - avg) for avg, min_val, max_val in zip(avgs, mins, maxs)]
@@ -275,16 +321,21 @@ def create_comparison_plot(data):
     # Add a color legend to explain the meaning of colors
     from matplotlib.patches import Patch
     legend_elements = [
-        Patch(facecolor='red', alpha=0.7, label='Tundra (NAT64/DNS64)'),
-        Patch(facecolor='green', alpha=0.7, label='Jool (Stateful NAT64)'),
-        Patch(facecolor='blue', alpha=0.7, label='Tayga (Stateless NAT64)')
+        # IPv4 Transition colors
+        Patch(facecolor='red', alpha=0.7, label='IPv4: Tundra (NAT64/DNS64)'),
+        Patch(facecolor='green', alpha=0.7, label='IPv4: Jool (Stateful NAT64)'),
+        Patch(facecolor='blue', alpha=0.7, label='IPv4: Tayga (Single/Double only)'),
+        # IPv6 Baseline colors  
+        Patch(facecolor='orange', alpha=0.7, label='IPv6: 1 Hop (Tundra)'),
+        Patch(facecolor='purple', alpha=0.7, label='IPv6: 2 Hops (Jool)')
     ]
-    fig.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.98, 0.92))
+    #fig.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(0.98, 0.92))
     
     plt.tight_layout()
     plt.savefig(os.path.join(OUTPUT_DIR, 'rtt_comparison_summary.png'), dpi=300, bbox_inches='tight')
     print(f"Comparison plot saved to {OUTPUT_DIR}/rtt_comparison_summary.png")
-    print("  - Color bars represent translation tools: Red=Tundra, Green=Jool, Blue=Tayga")
+    print("  - IPv4 Transition: Red=Tundra, Green=Jool, Blue=Tayga (Single/Double only)")
+    print("  - IPv6 Baseline: Orange=1 Hop (Tundra), Purple=2 Hops (Jool)")
     print("  - Black error bars show min-max RTT range for each measurement")
     print("  - Bar height shows average RTT, numbers on top show exact values")
     plt.close()
