@@ -71,6 +71,7 @@ def parse_ping_file(filepath):
             packet_count = len(rtts)
             std_dev = np.std(rtts) if rtts else 0
             percentile_95 = np.percentile(rtts, 95) if rtts else 0
+            median_rtt = np.median(rtts) if rtts else 0
             
             return {
                 'min': min_rtt,
@@ -78,6 +79,7 @@ def parse_ping_file(filepath):
                 'max': max_rtt,
                 'mdev': mdev_rtt,
                 'std_dev': std_dev,
+                'median': median_rtt,
                 'p95': percentile_95,
                 'packet_count': packet_count,
                 'raw_rtts': rtts
@@ -175,6 +177,7 @@ def create_summary_table(data):
                     'IP Address': row['ip_address'],
                     'Min (ms)': f"{row['min']:.3f}",
                     'Avg (ms)': f"{row['avg']:.3f}",
+                    'Median (ms)': f"{row['median']:.3f}",
                     'Max (ms)': f"{row['max']:.3f}",
                     'Std Dev (ms)': f"{row['std_dev']:.3f}",
                     'P95 (ms)': f"{row['p95']:.3f}",
@@ -350,10 +353,10 @@ def create_latex_table(summary_df):
     latex_output.append("\\caption{RTT Performance Comparison Across Translation Tools and Scenarios}")
     latex_output.append("\\label{tab:rtt_comparison}")
     latex_output.append("\\footnotesize")
-    latex_output.append("\\begin{tabular}{|l|l|l|l|r|r|r|r|r|r|}")
+    latex_output.append("\\begin{tabular}{|l|l|l|l|r|r|r|r|r|r|r|}")
     latex_output.append("\\hline")
     latex_output.append("\\textbf{Scenario} & \\textbf{IP Type} & \\textbf{Tool} & \\textbf{IP Address} & " +
-                       "\\textbf{Min (ms)} & \\textbf{Avg (ms)} & \\textbf{Max (ms)} & " +
+                       "\\textbf{Min (ms)} & \\textbf{Avg (ms)} & \\textbf{Median (ms)} & \\textbf{Max (ms)} & " +
                        "\\textbf{Std Dev (ms)} & \\textbf{P95 (ms)} & \\textbf{Packets} \\\\")
     latex_output.append("\\hline")
     
@@ -378,7 +381,7 @@ def create_latex_table(summary_df):
         # Create table row
         row_data = f"{row['Scenario']} & {row['IP Type']} & {row['Tool']} & " + \
                   f"\\texttt{{{ip_address}}} & {row['Min (ms)']} & {row['Avg (ms)']} & " + \
-                  f"{row['Max (ms)']} & {row['Std Dev (ms)']} & {row['P95 (ms)']} & {row['Packets']} \\\\"
+                  f"{row['Median (ms)']} & {row['Max (ms)']} & {row['Std Dev (ms)']} & {row['P95 (ms)']} & {row['Packets']} \\\\"
         
         latex_output.append(row_data)
     
@@ -387,7 +390,7 @@ def create_latex_table(summary_df):
     latex_output.append("\\end{table}")
     latex_output.append("")
     latex_output.append("% Table Notes:")
-    latex_output.append("% - Min/Avg/Max: Minimum, Average, and Maximum RTT values")
+    latex_output.append("% - Min/Avg/Median/Max: Minimum, Average, Median, and Maximum RTT values")
     latex_output.append("% - Std Dev: Standard deviation of RTT measurements")  
     latex_output.append("% - P95: 95th percentile RTT value")
     latex_output.append("% - Packets: Number of ping packets measured")

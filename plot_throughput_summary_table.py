@@ -70,6 +70,7 @@ def parse_iperf_file(filepath):
         min_throughput = min(interval_throughputs)
         max_throughput = max(interval_throughputs)
         avg_throughput = np.mean(interval_throughputs)
+        median_throughput = np.median(interval_throughputs)
         std_dev = np.std(interval_throughputs)
         percentile_95 = np.percentile(interval_throughputs, 95)
         percentile_5 = np.percentile(interval_throughputs, 5)
@@ -82,6 +83,7 @@ def parse_iperf_file(filepath):
         return {
             'min': min_throughput,
             'avg': avg_throughput, 
+            'median': median_throughput,
             'max': max_throughput,
             'overall': overall_throughput_gbps,
             'std_dev': std_dev,
@@ -193,6 +195,7 @@ def create_summary_table(data):
                         'IP Address': row['ip_address'],
                         'Min (Gbps)': f"{row['min']:.3f}",
                         'Avg (Gbps)': f"{row['avg']:.3f}",
+                        'Median (Gbps)': f"{row['median']:.3f}",
                         'Max (Gbps)': f"{row['max']:.3f}",
                         'Overall (Gbps)': f"{row['overall']:.3f}",
                         'Std Dev (Gbps)': f"{row['std_dev']:.3f}",
@@ -391,11 +394,11 @@ def create_latex_table(summary_df):
     latex_output.append("\\caption{Throughput Performance Comparison Across Translation Tools and Scenarios}")
     latex_output.append("\\label{tab:throughput_comparison}")
     latex_output.append("\\footnotesize")
-    latex_output.append("\\begin{tabular}{|l|l|l|l|l|r|r|r|r|r|r|r|r|}")
+    latex_output.append("\\begin{tabular}{|l|l|l|l|l|r|r|r|r|r|r|r|r|r|}")
     latex_output.append("\\hline")
     latex_output.append("\\textbf{Scenario} & \\textbf{Duration} & \\textbf{IP Type} & \\textbf{Tool} & " +
                        "\\textbf{IP Address} & \\textbf{Min (Gbps)} & \\textbf{Avg (Gbps)} & " +
-                       "\\textbf{Max (Gbps)} & \\textbf{Overall (Gbps)} & \\textbf{Std Dev (Gbps)} & " +
+                       "\\textbf{Median (Gbps)} & \\textbf{Max (Gbps)} & \\textbf{Overall (Gbps)} & \\textbf{Std Dev (Gbps)} & " +
                        "\\textbf{P95 (Gbps)} & \\textbf{Total (GB)} & \\textbf{Retransmits} \\\\")
     latex_output.append("\\hline")
     
@@ -420,7 +423,7 @@ def create_latex_table(summary_df):
         # Create table row
         row_data = f"{row['Scenario']} & {row['Duration']} & {row['IP Type']} & {row['Tool']} & " + \
                   f"\\texttt{{{ip_address}}} & {row['Min (Gbps)']} & {row['Avg (Gbps)']} & " + \
-                  f"{row['Max (Gbps)']} & {row['Overall (Gbps)']} & {row['Std Dev (Gbps)']} & " + \
+                  f"{row['Median (Gbps)']} & {row['Max (Gbps)']} & {row['Overall (Gbps)']} & {row['Std Dev (Gbps)']} & " + \
                   f"{row['P95 (Gbps)']} & {row['Total (GB)']} & {row['Retransmits']} \\\\"
         
         latex_output.append(row_data)
